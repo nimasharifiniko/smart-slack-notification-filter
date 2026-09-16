@@ -8,7 +8,7 @@ from app.database import init_db, save_message
 # Load environment variables
 load_dotenv()
 
-# Initialize Slack App
+# Initialize Slack App instance
 app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
 
@@ -40,7 +40,7 @@ def handle_message_events(body, say, logger):
 
     if urgency == "URGENT":
         print("🚨 URGENT message detected! Sending immediate alert to Slack...")
-        # Reply directly in thread or channel for urgent alerts
+        # Reply directly in thread for urgent alerts
         alert_text = (
             f"🚨 *URGENT ALERT DETECTED*\n"
             f"*Category:* {category}\n"
@@ -64,13 +64,19 @@ def handle_message_events(body, say, logger):
 
 
 def start_slack_app():
-    # Initialize SQLite database schema at startup
+    # Initialize SQLite database schema
     init_db()
 
     app_token = os.environ.get("SLACK_APP_TOKEN")
     if not app_token:
         raise ValueError("❌ Missing SLACK_APP_TOKEN in .env file.")
 
+    # Import scheduler here to avoid circular imports
+    from app.scheduler import start_scheduler
+
+    # Start Background Scheduler (Runs every 60 seconds for demo/testing)
+    start_scheduler(app, interval_seconds=60)
+
     handler = SocketModeHandler(app, app_token)
-    print("⚡️ Smart Notification Filter Pipeline active with DB & AI...")
+    print("⚡️ Smart Notification Filter Pipeline active with DB, AI & Scheduler...")
     handler.start()
